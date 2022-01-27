@@ -1,0 +1,38 @@
+server:
+  port: ${SERVER_PORT}
+  address: ${SERVER_ADDRESS}
+  servlet:
+    context-path: /servicio-prSuma
+spring:
+  config:
+    import: optional:file:.env[.properties]
+    # import: optional:file:/etc/springboot-env/controlOperativo/.env[.properties]
+    
+  datasource:
+    servicio-prsuma:
+      driver-class-name: org.postgresql.Driver
+      jdbc-url: jdbc:postgresql://${DB_HOST}:${PORT}/${DB_SCHEMA}
+      username: ${USER}
+      password: ${PASSWORD}
+      hibernate-hbm2ddl-auto: update
+      show-sql: true
+      
+security:
+  oauth2:
+    resource:
+      filter-order: 3
+  signing-key: ${SIGNIN_KEY}
+  encoding-strength: ${ENCODING_STRENGTH}
+  security-realm: Spring Boot JWT
+  jwt:
+    client-id: ${CLIENT_ID}
+    client-secret: ${CLIENT_SECRET}
+    grant-type: ${GRANT_TYPE}
+    scope-read: read
+    scope-write: write
+    resource-ids: ${RESOURCE_ID}
+property: false
+suma:
+  api:
+    host:
+      baseUrl: https://suma.aduana.gob.bo
