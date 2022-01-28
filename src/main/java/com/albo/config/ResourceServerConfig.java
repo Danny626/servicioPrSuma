@@ -9,7 +9,7 @@ import org.springframework.security.oauth2.config.annotation.web.configuration.R
 import org.springframework.security.oauth2.config.annotation.web.configurers.ResourceServerSecurityConfigurer;
 import org.springframework.security.oauth2.provider.token.ResourceServerTokenServices;
 
-import com.albo.exception.AuthException;
+import com.albo.AuthException;
 
 @Configuration
 @EnableResourceServer
@@ -35,7 +35,6 @@ public class ResourceServerConfig extends ResourceServerConfigurerAdapter {
                 .and()
                 .authorizeRequests()
                 .antMatchers("/v2/api-docs/**" ).authenticated()
-                .antMatchers("/controlOperativo/**" ).authenticated()
                 .antMatchers("/suma/**" ).authenticated();
                 
     }    

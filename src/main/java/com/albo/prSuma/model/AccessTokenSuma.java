@@ -7,6 +7,8 @@ import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.JoinColumn;
+import javax.persistence.ManyToOne;
 import javax.persistence.Table;
 
 @Entity
@@ -25,6 +27,10 @@ public class AccessTokenSuma implements Serializable {
 
 	@Column(name = "TOKEN", nullable = false)
 	private String token;
+
+	@ManyToOne
+	@JoinColumn(name = "recinto", nullable = false, referencedColumnName = "rec_cod")
+	private Recinto recinto;
 
 	public Long getId() {
 		return id;
@@ -49,5 +55,13 @@ public class AccessTokenSuma implements Serializable {
 	public void setToken(String token) {
 		this.token = token;
 	}
-	
+
+	public Recinto getRecinto() {
+		return recinto;
+	}
+
+	public void setRecinto(Recinto recinto) {
+		this.recinto = recinto;
+	}
+
 }
