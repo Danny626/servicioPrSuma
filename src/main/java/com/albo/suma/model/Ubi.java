@@ -1,12 +1,14 @@
 package com.albo.suma.model;
 
+import java.math.BigDecimal;
+
 public class Ubi {
 	public TipEmb tipEmb;
 	public TipEmbDes tipEmbDes;
 	public Object pel;
 	public int canBul;
 	public int canBulDes;
-	public int pesBru;
+	public BigDecimal pesBru;
 	public Par par;
 	public Niv niv;
 	public Pro pro;
@@ -53,11 +55,11 @@ public class Ubi {
 		this.canBulDes = canBulDes;
 	}
 
-	public int getPesBru() {
+	public BigDecimal getPesBru() {
 		return pesBru;
 	}
 
-	public void setPesBru(int pesBru) {
+	public void setPesBru(BigDecimal pesBru) {
 		this.pesBru = pesBru;
 	}
 

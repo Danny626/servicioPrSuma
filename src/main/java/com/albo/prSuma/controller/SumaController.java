@@ -26,6 +26,7 @@ import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
 import com.albo.prSuma.dto.BodyRegistroPartesSuma;
+import com.albo.prSuma.dto.BodyVerPrmSuma;
 import com.albo.prSuma.dto.ParamsLoginSuma;
 import com.albo.prSuma.dto.RespVerificaTokenSuma;
 import com.albo.prSuma.dto.ResultLoginSuma;
@@ -279,6 +280,24 @@ public class SumaController {
 		}
 	}
 	
+	@PostMapping(value = "/verPrmSuma", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+	public ResponseEntity<Object> verPrmSuma(@RequestBody BodyVerPrmSuma bodyVerPrmSuma) {
+		
+		// realizamos el request para ver el prm suma
+		ResponseEntity<> listaPartesSumaResultado = this.requestBusquedaParteSuma(bodyRegistroPartesSuma);
+
+		// si la consulta del conteo de partes suma es correcto
+		if(conteoPrSuma.getStatusCode() == HttpStatus.OK) {
+			if( Integer.valueOf(conteoPrSuma.getBody().toString()) > 1 ) {
+				LOGGER.error("Error: " + "Existen " + conteoPrSuma.getBody().toString() + " resultados con esa búsqueda");
+				return new ResponseEntity<>("Existen " + conteoPrSuma.getBody().toString() + " resultados con esa búsqueda", HttpStatus.CONFLICT);
+			}
+		}
+		
+		return new ResponseEntity<>(listaPartesSumaResultado.getBody().get(0), HttpStatus.OK);
+		
+	}
+	
 	// Realiza la búsqueda de PR en SUMA
 	public ResponseEntity<List<ParteSumaProceso>> requestBusquedaParteSuma(
 			BodyRegistroPartesSuma bodyRegistroPartesSuma) {
@@ -290,6 +309,19 @@ public class SumaController {
 			return new ResponseEntity<List<ParteSumaProceso>>(new ArrayList<>(), response.getStatusCode());
 		}
 		
+		return new ResponseEntity<List<ParteSumaProceso>>(response.getBody(), HttpStatus.OK);	
+	}
+	
+	// Realiza el request para ver el prm en SUMA
+	public ResponseEntity<> requestVerPrmSuma(BodyRegistroPartesSuma bodyRegistroPartesSuma) {
+					
+		ResponseEntity<List<ParteSumaProceso>> response = this.requestMisPartesSuma(bodyRegistroPartesSuma);
+	
+		if(response.getStatusCode() != HttpStatus.OK) {
+			LOGGER.error("/registroPartesSuma => " + response.getStatusCode());
+			return new ResponseEntity<List<ParteSumaProceso>>(new ArrayList<>(), response.getStatusCode());
+		}
+	
 		return new ResponseEntity<List<ParteSumaProceso>>(response.getBody(), HttpStatus.OK);	
 	}
 	

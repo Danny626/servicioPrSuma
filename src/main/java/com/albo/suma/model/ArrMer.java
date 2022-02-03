@@ -1,12 +1,13 @@
 package com.albo.suma.model;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class ArrMer {
 	public Object pla;
 	public Object acoMer;
 	public List<Object> con;
-	public Object obsArr;
+	public ArrayList<ObsArr> obsArr;
 
 	public Object getPla() {
 		return pla;
@@ -32,11 +33,12 @@ public class ArrMer {
 		this.con = con;
 	}
 
-	public Object getObsArr() {
+	public ArrayList<ObsArr> getObsArr() {
 		return obsArr;
 	}
 
-	public void setObsArr(Object obsArr) {
+	public void setObsArr(ArrayList<ObsArr> obsArr) {
 		this.obsArr = obsArr;
 	}
+
 }

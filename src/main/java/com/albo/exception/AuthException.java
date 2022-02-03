@@ -1,4 +1,4 @@
-package com.albo;
+package com.albo.exception;
 
 import java.io.IOException;
 import java.util.Date;
