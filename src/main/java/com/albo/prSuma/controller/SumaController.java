@@ -10,6 +10,7 @@ import java.util.Optional;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -26,7 +27,7 @@ import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
 import com.albo.prSuma.dto.BodyRegistroPartesSuma;
-import com.albo.prSuma.dto.BodyVerPrmSuma;
+import com.albo.prSuma.dto.BodyVerPreSuma;
 import com.albo.prSuma.dto.ParamsLoginSuma;
 import com.albo.prSuma.dto.RespVerificaTokenSuma;
 import com.albo.prSuma.dto.ResultLoginSuma;
@@ -36,6 +37,7 @@ import com.albo.prSuma.model.Recinto;
 import com.albo.prSuma.service.IAccessTokenSumaService;
 import com.albo.prSuma.service.IRecintoService;
 import com.albo.suma.model.ParteSumaProceso;
+import com.albo.suma.model.pre.PreSuma;
 
 @RestController
 @RequestMapping("/suma")
@@ -46,6 +48,10 @@ public class SumaController {
 	private final String URI_VERIFICA_TOKEN_SUMA = "/b-sso/rest/autenticar/verificar";
 	private final String URI_MIS_PARTES_SUMA = "/b-ingreso/api/json/pre/120585022/prms";
 	private final String URI_CONTEO_PARTES_SUMA = "/b-ingreso/api/json/pre/120585022/count";
+	private final String URI_VER_PRE_SUMA = "/b-ingreso/api/json/pre/";
+	
+	@Value("${suma.api.host.baseurl}")
+	private String apiHost;
 	
 	@Autowired
 	private RestTemplate restTemplate;
@@ -210,7 +216,7 @@ public class SumaController {
 		ResponseEntity<Integer> response = new ResponseEntity<>(null, HttpStatus.OK);
 		
 		try {
-			response = restTemplate.exchange(request, Integer.class);
+			response = this.restTemplate.exchange(request, Integer.class);
 		} catch (HttpClientErrorException e) {
 			LOGGER.error("Error obteniendo conteo partes suma: " + e.getResponseBodyAsString());
 			return new ResponseEntity<String>("Error obteniendo conteo partes suma", response.getStatusCode());
@@ -280,21 +286,31 @@ public class SumaController {
 		}
 	}
 	
-	@PostMapping(value = "/verPrmSuma", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-	public ResponseEntity<Object> verPrmSuma(@RequestBody BodyVerPrmSuma bodyVerPrmSuma) {
+	@PostMapping(value = "/verPreSuma", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+	public ResponseEntity<Object> verPreSuma(@RequestBody BodyVerPreSuma bodyVerPreSuma) {
 		
-		// realizamos el request para ver el prm suma
-		ResponseEntity<> listaPartesSumaResultado = this.requestBusquedaParteSuma(bodyRegistroPartesSuma);
-
-		// si la consulta del conteo de partes suma es correcto
-		if(conteoPrSuma.getStatusCode() == HttpStatus.OK) {
-			if( Integer.valueOf(conteoPrSuma.getBody().toString()) > 1 ) {
-				LOGGER.error("Error: " + "Existen " + conteoPrSuma.getBody().toString() + " resultados con esa búsqueda");
-				return new ResponseEntity<>("Existen " + conteoPrSuma.getBody().toString() + " resultados con esa búsqueda", HttpStatus.CONFLICT);
+		ResponseEntity<Object> responseLoginSuma = this.loginSuma(bodyVerPreSuma.getParamsLoginSuma());
+		ResultLoginSuma resultLoginSuma = new ResultLoginSuma();
+		
+		switch (responseLoginSuma.getStatusCode()) {
+		case OK:
+			resultLoginSuma = (ResultLoginSuma) responseLoginSuma.getBody();
+			bodyVerPreSuma.setTokenSuma(resultLoginSuma.getResult().getToken());
+			
+			// realizamos el request para ver el prm suma
+			ResponseEntity<?> responseVerPreSuma = this.requestVerPreSuma(bodyVerPreSuma);
+			
+			if(responseVerPreSuma.getStatusCode() != HttpStatus.OK) {
+				LOGGER.error("Error: " + responseVerPreSuma.getBody());
+				return new ResponseEntity<>(responseVerPreSuma.getBody(), responseVerPreSuma.getStatusCode());
 			}
+			
+			return new ResponseEntity<>(responseVerPreSuma.getBody(), HttpStatus.OK);
+			
+		default:
+			LOGGER.error("Error login SUMA: " + responseLoginSuma.getStatusCode() + ' ' + responseLoginSuma.getBody());
+			return new ResponseEntity<>(responseLoginSuma.getBody(), responseLoginSuma.getStatusCode());
 		}
-		
-		return new ResponseEntity<>(listaPartesSumaResultado.getBody().get(0), HttpStatus.OK);
 		
 	}
 	
@@ -312,17 +328,37 @@ public class SumaController {
 		return new ResponseEntity<List<ParteSumaProceso>>(response.getBody(), HttpStatus.OK);	
 	}
 	
-	// Realiza el request para ver el prm en SUMA
-	public ResponseEntity<> requestVerPrmSuma(BodyRegistroPartesSuma bodyRegistroPartesSuma) {
+	// Realiza el request para ver el pre en SUMA
+	public ResponseEntity<?> requestVerPreSuma(BodyVerPreSuma bodyVerPreSuma) {
 					
-		ResponseEntity<List<ParteSumaProceso>> response = this.requestMisPartesSuma(bodyRegistroPartesSuma);
+		HttpHeaders headers = new HttpHeaders();
+		headers.set("Accept", "application/json, text/plain, */*");
+		headers.set("Auth-Token", bodyVerPreSuma.getTokenSuma());
+		headers.set("Content-Type", "application/json;charset=UTF-8");
+		headers.set("Host", this.apiHost.replace("https://", ""));
+		headers.set("sec-ch-ua", "\" Not A;Brand\";v=\"99\", \"Chromium\";v=\"96\", \"Google Chrome\";v=\"96\"");
+		headers.set("sec-ch-ua-mobile", "?0");
+		headers.set("sec-ch-ua-platform", "\"Windows\"");
+		headers.set("User", bodyVerPreSuma.getUserSuma());
+		headers.set("User-Agent",
+				"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.45 Safari/537.36");
+		
+		// armado url
+		String urlPre = URI_VER_PRE_SUMA + bodyVerPreSuma.getIdPrmSuma();
+		
+		RequestEntity<?> request = RequestEntity.get(urlPre).headers(headers).build();
 	
-		if(response.getStatusCode() != HttpStatus.OK) {
-			LOGGER.error("/registroPartesSuma => " + response.getStatusCode());
-			return new ResponseEntity<List<ParteSumaProceso>>(new ArrayList<>(), response.getStatusCode());
+		ResponseEntity<?> response = new ResponseEntity<>(new PreSuma(), HttpStatus.OK);
+		
+		try {
+			response = this.restTemplate.exchange(request, PreSuma.class);
+		} catch (HttpClientErrorException e) {
+			LOGGER.error("Error obteniendo el pre suma: " + e.getResponseBodyAsString());
+			LOGGER.error("Header error: " + response.getHeaders());
+			return new ResponseEntity<>(new PreSuma(), response.getStatusCode());
 		}
-	
-		return new ResponseEntity<List<ParteSumaProceso>>(response.getBody(), HttpStatus.OK);	
+
+		return response;
 	}
 	
 	private ResponseEntity<List<ParteSumaProceso>> requestMisPartesSuma(BodyRegistroPartesSuma bodyRegistroPartesSuma) {
@@ -333,7 +369,7 @@ public class SumaController {
 				"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.45 Safari/537.36");
 		headers.set("Content-Type", "application/json;charset=UTF-8");
 		headers.set("Accept", "application/json, text/plain, */*");
-		headers.set("User", bodyRegistroPartesSuma.getUsuario());
+		headers.set("User", bodyRegistroPartesSuma.getBodyLoginSuma().getNombreUsuario());
 		headers.set("Auth-Token", bodyRegistroPartesSuma.getToken());
 		headers.set("sec-ch-ua-platform", "\"Windows\"");
 
