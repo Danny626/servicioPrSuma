@@ -1,9 +1,11 @@
 package com.albo.suma.model.pre;
 
+import java.math.BigDecimal;
+
 public class DetIte {
 	public String desMer;
-	public int canBul;
-	public int pesBru;
+	public Integer canBul;
+	public BigDecimal pesBru;
 
 	public String getDesMer() {
 		return desMer;
@@ -13,19 +15,19 @@ public class DetIte {
 		this.desMer = desMer;
 	}
 
-	public int getCanBul() {
+	public Integer getCanBul() {
 		return canBul;
 	}
 
-	public void setCanBul(int canBul) {
+	public void setCanBul(Integer canBul) {
 		this.canBul = canBul;
 	}
 
-	public int getPesBru() {
+	public BigDecimal getPesBru() {
 		return pesBru;
 	}
 
-	public void setPesBru(int pesBru) {
+	public void setPesBru(BigDecimal pesBru) {
 		this.pesBru = pesBru;
 	}
 
